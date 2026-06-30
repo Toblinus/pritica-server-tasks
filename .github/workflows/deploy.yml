@@ -21,10 +21,9 @@ jobs:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          source: "docker-compose.yml,Dockerfile,.dockerignore,prisma/,src/"
+          source: "docker-compose.yml,Dockerfile,.dockerignore,prisma,src" # Убрали слэши в конце папок
           target: "/app/practica-server"
-          rm: true # Очищает старое содержимое целевой папки перед копированием, избавляя от мусора
-          strip_components: 0
+          strip_components: 0 # Железно копирует файлы в корень target папки без создания лишних поддиректорий
 
       # 3. Подключаемся и запускаем сборку из правильного места
       - name: Executing remote SSH commands to deploy
