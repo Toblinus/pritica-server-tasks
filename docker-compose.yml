@@ -1,0 +1,55 @@
+services:
+  # 1. Сервер бэкенда NestJS
+  api-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nest-api-server
+    ports:
+      - "80:3000"
+    environment:
+      - DATABASE_URL=postgresql://myuser:mypassword@postgres-db:5432/nest_db?schema=public
+      - JWT_SECRET=fjsdkflsdfgsyglisugjdfhgksdgykusghs
+    depends_on:
+      postgres-db:
+        condition: service_healthy # Ждем, пока база данных будет полностью готова принимать запросы
+    networks:
+      - app-network
+
+  # 2. База данных PostgreSQL
+  postgres-db:
+    image: postgres:16-alpine
+    container_name: postgres-db
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: nest_db
+    ports:
+      - "5432:5432" # Пробрасываем наружу, чтобы вы могли подключаться через DBeaver
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck: # Проверка здоровья базы данных перед стартом бэкенда
+      test: ["CMD-SHELL", "pg_isready -U myuser -d nest_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+
+  # 3. Веб-интерфейс Adminer для просмотра таблиц БД
+  adminer:
+    image: adminer:latest
+    container_name: adminer-web
+    ports:
+      - "8080:8080" # Будет доступен по адресу http://localhost:8080
+    depends_on:
+      - postgres-db
+    networks:
+      - app-network
+
+volumes:
+  pgdata:
+
+networks:
+  app-network:
+    driver: bridge
