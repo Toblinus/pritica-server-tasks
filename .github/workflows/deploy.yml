@@ -35,19 +35,28 @@ jobs:
           script: |
             cd /app/practica-server
             
-            # Проверяем, на месте ли файлы (для вывода логов в GitHub Actions)
+            # Показываем список файлов, чтобы убедиться, что Dockerfile и src на месте
             ls -la
             
-            # Генерируем .env файл для продакшена на сервере
+            # Пересоздаем .env
             echo "DATABASE_URL=postgresql://myuser:mypassword@postgres-db:5432/nest_db?schema=public" > .env
             echo "JWT_SECRET=super-secure-vps-prod-secret-key-12345" >> .env
             
-            # Останавливаем старое (если было) и поднимаем проект с полной пересборкой образов
+            # Включаем вывод подробных логов сборки прямо в консоль GitHub Actions
+            export DOCKER_BUILDKIT=1
+            
             docker compose down
+            
+            # Запускаем сборку с выводом логов в реальном времени
             docker compose up -d --build
             
-            # Применяем миграции Prisma к базе данных внутри контейнера, чтобы автоматически создать таблицы СУБД
+            # Ждем 5 секунд, чтобы контейнеры успели проинициализироваться
+            sleep 5
+            
+            # Выводим логи бэкенда, если он упал, мы сразу увидим ошибку в гитхабе
+            docker compose logs api-server
+            
+            # Накатываем миграции Prisma
             docker compose run --rm api-server npx prisma migrate deploy
             
-            # Чистим кэш Docker-образов, освобождая память диска VPS
             docker image prune -f
