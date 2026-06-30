@@ -3,29 +3,33 @@ name: Deploy Task Tracker to VPS
 on:
   push:
     branches:
-      - master # Ваша основная ветка (main или master)
+      - main # Ваша ветка (main или master)
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Скачиваем актуальный код из репозитория
+      # 1. Скачиваем код из репозитория
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Безопасно копируем файлы НАПРЯМУЮ в рабочую папку /app/practica-server
-      - name: Copy files to Server via SSH Key
+      # 2. Архивируем проект в один файл (исключая локальный мусор)
+      - name: Compress project files
+        run: |
+          tar --exclude='./node_modules' --exclude='./dist' --exclude='./.git' -czf release.tar.gz .
+
+      # 3. Копируем ОДИН файл архива на сервер (это работает без сбоев путей)
+      - name: Copy archive to Server via SSH Key
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
-          source: "docker-compose.yml,Dockerfile,.dockerignore,prisma,src" # Убрали слэши в конце папок
+          source: "release.tar.gz"
           target: "/app/practica-server"
-          strip_components: 0 # Железно копирует файлы в корень target папки без создания лишних поддиректорий
 
-      # 3. Подключаемся и запускаем сборку из правильного места
+      # 4. Распаковываем и запускаем сборку без ошибок путей
       - name: Executing remote SSH commands to deploy
         uses: appleboy/ssh-action@master
         with:
@@ -35,28 +39,27 @@ jobs:
           script: |
             cd /app/practica-server
             
-            # Показываем список файлов, чтобы убедиться, что Dockerfile и src на месте
+            # Распаковываем архив и удаляем его за собой
+            tar -xzf release.tar.gz
+            rm release.tar.gz
+            
+            # Проверяем структуру — теперь tsconfig.json и nest-cli.json будут на месте 100%
             ls -la
             
-            # Пересоздаем .env
+            # Генерируем .env файл для продакшена
             echo "DATABASE_URL=postgresql://myuser:mypassword@postgres-db:5432/nest_db?schema=public" > .env
             echo "JWT_SECRET=super-secure-vps-prod-secret-key-12345" >> .env
             
-            # Включаем вывод подробных логов сборки прямо в консоль GitHub Actions
+            # Пересобираем и поднимаем контейнеры
             export DOCKER_BUILDKIT=1
-            
             docker compose down
-            
-            # Запускаем сборку с выводом логов в реальном времени
             docker compose up -d --build
             
-            # Ждем 5 секунд, чтобы контейнеры успели проинициализироваться
+            # Ждем инициализации Postgres
             sleep 5
             
-            # Выводим логи бэкенда, если он упал, мы сразу увидим ошибку в гитхабе
-            docker compose logs api-server
-            
-            # Накатываем миграции Prisma
+            # Накатываем миграции Prisma внутри контейнера бэкенда
             docker compose run --rm api-server npx prisma migrate deploy
             
+            # Чистим кэш Docker-образов
             docker image prune -f
