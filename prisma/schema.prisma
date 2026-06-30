@@ -1,13 +1,142 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../src/prisma/generated"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+// 1. Пользователь
+model User {
+  id        String   @id @default(uuid())
+  login     String   @unique
+  password  String // Хэш Argon2
+  avatar    Bytes? // Хранение бинарника аватарки прямо в БД
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Связи
+  workspaces    WorkspaceMember[]
+  authoredTasks Task[]            @relation("AuthoredTasks")
+  assignedTasks Task[]            @relation("AssignedTasks")
+  comments      Comment[]
+  sessions      Session[]
+
+  @@map("users")
+}
+
+// 2. Пространство задач
+model Workspace {
+  id        String   @id @default(uuid())
+  name      String
+  isPrivate Boolean  @default(false) @map("is_private")
+  code      String   @unique // Код для Jira-style (например, "JIRA", "PROJ")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Связи
+  members WorkspaceMember[]
+  tasks   Task[]
+
+  @@map("workspaces")
+}
+
+// Роли для пространства задач
+enum WorkspaceRole {
+  ADMIN
+  EDITOR
+  EXECUTOR
+  OBSERVER
+}
+
+// 3. Связь Пользователь и Пространство (Многие-ко-многим с доп. полями)
+model WorkspaceMember {
+  userId      String        @map("user_id")
+  workspaceId String        @map("workspace_id")
+  role        WorkspaceRole @default(EXECUTOR)
+  createdAt   DateTime      @default(now()) @map("created_at")
+
+  // Связи
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  // Составной первичный ключ
+  @@id([userId, workspaceId])
+  @@map("workspace_members")
+}
+
+// Приоритеты задач
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// Статусы задач (Jira-style)
+enum TaskStatus {
+  TODO // Создано / К выполнению
+  IN_PROGRESS // В работе
+  DONE // Выполнено
+}
+
+// 4. Задача
+model Task {
+  id          String @id @default(uuid())
+  workspaceId String @map("workspace_id")
+  number      Int // Инкрементируемый номер внутри пространства (1, 2, 3...)
+
+  authorId   String  @map("author_id")
+  assigneeId String? @map("assignee_id")
+
+  title       String
+  description String?
+  priority    TaskPriority @default(MEDIUM)
+  status      TaskStatus   @default(TODO)
+  dueDate     DateTime?    @map("due_date") // Срок исполнения
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // Связи
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  author    User      @relation("AuthoredTasks", fields: [authorId], references: [id])
+  assignee  User?     @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  comments  Comment[]
+
+  // Гарантирует уникальность номера задачи внутри одного пространства
+  @@unique([workspaceId, number])
+  @@map("tasks")
+}
+
+// 5. Комментарий к задаче
+model Comment {
+  id        String   @id @default(uuid())
+  taskId    String   @map("task_id")
+  authorId  String   @map("author_id")
+  parentId  String?  @map("parent_id") // Для древовидных ответов
+  content   String
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Связи
+  task    Task      @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  author  User      @relation(fields: [authorId], references: [id])
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies Comment[] @relation("CommentReplies")
+
+  @@map("comments")
+}
+
+// 6. Сессия пользователя
+model Session {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  userAgent String   @map("user_agent")
+  ip        String
+  location  String? // Сюда запишем геопозицию от внешнего сервиса
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Связь
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
 }
