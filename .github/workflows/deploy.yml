@@ -3,7 +3,7 @@ name: Deploy Task Tracker to VPS
 on:
   push:
     branches:
-      - main # Ваша ветка (main или master)
+      - master # Ваша ветка (main или master)
 
 jobs:
   deploy:
