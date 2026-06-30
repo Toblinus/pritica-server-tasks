@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCommentDto, UpdateCommentDto } from './dto/comment.dto';
+import { NotificationsService } from '../notifications/notifications.service';
 
 // Интерфейс для формирования древовидной структуры
 export interface CommentNode {
@@ -20,7 +21,10 @@ export interface CommentNode {
 
 @Injectable()
 export class CommentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   // 1. СОЗДАНИЕ КОММЕНТАРИЯ
   async create(taskId: string, authorId: string, dto: CreateCommentDto) {
@@ -39,7 +43,7 @@ export class CommentsService {
         throw new NotFoundException('Родительский комментарий не найден');
     }
 
-    return this.prisma.comment.create({
+    const comment = await this.prisma.comment.create({
       data: {
         taskId,
         authorId,
@@ -48,6 +52,14 @@ export class CommentsService {
       },
       include: { author: { select: { id: true, login: true } } },
     });
+
+    this.notificationsService.emit({
+      type: 'COMMENT_MUTATED',
+      targetTaskId: taskId,
+      data: { action: 'CREATE', comment },
+    });
+
+    return comment;
   }
 
   // ОБНОВЛЕННЫЙ МЕТОД UPDATE
@@ -63,10 +75,18 @@ export class CommentsService {
       );
     }
 
-    return this.prisma.comment.update({
+    const newComment = await this.prisma.comment.update({
       where: { id: commentId },
       data: { content: dto.content },
     });
+
+    this.notificationsService.emit({
+      type: 'COMMENT_MUTATED',
+      targetTaskId: newComment.taskId,
+      data: { action: 'UPDATE', newComment },
+    });
+
+    return newComment;
   }
 
   // ОБНОВЛЕННЫЙ МЕТОД REMOVE
@@ -86,6 +106,13 @@ export class CommentsService {
     }
 
     await this.deleteCommentBranch(commentId);
+
+    this.notificationsService.emit({
+      type: 'COMMENT_MUTATED',
+      targetTaskId: comment.taskId,
+      data: { action: 'DELETE', comment },
+    });
+
     return {
       success: true,
       message: 'Комментарий и вся его ветка успешно удалены',

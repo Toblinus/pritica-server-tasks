@@ -6,10 +6,14 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateTaskDto, UpdateTaskDto } from './dto/task.dto';
 import { TaskStatus } from '../prisma/generated/client';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class TasksService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private notificationsService: NotificationsService,
+  ) {}
 
   async create(workspaceId: string, authorId: string, dto: CreateTaskDto) {
     const workspace = await this.prisma.workspace.findUnique({
@@ -54,6 +58,18 @@ export class TasksService {
         },
       });
     });
+
+    if (task.assigneeId) {
+      this.notificationsService.emit({
+        type: 'TASK_ASSIGNED',
+        targetUserId: task.assigneeId,
+        data: {
+          taskId: task.id,
+          title: task.title,
+          message: 'На вас завели новую задачу',
+        },
+      });
+    }
 
     return {
       ...task,
@@ -126,6 +142,18 @@ export class TasksService {
           'Назначенный исполнитель не состоит в этом пространстве',
         );
       }
+    }
+
+    if (dto.assigneeId) {
+      this.notificationsService.emit({
+        type: 'TASK_ASSIGNED',
+        targetUserId: dto.assigneeId,
+        data: {
+          taskId: task.id,
+          title: task.title,
+          message: 'На вас завели новую задачу',
+        },
+      });
     }
 
     return this.prisma.task.update({

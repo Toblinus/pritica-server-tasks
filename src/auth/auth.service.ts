@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { AuthDto } from './dto/auth.dto';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class AuthService {
@@ -17,6 +18,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private httpService: HttpService,
+    private notificationsService: NotificationsService,
   ) {}
 
   // 1. РЕГИСТРАЦИЯ
@@ -120,6 +122,15 @@ export class AuthService {
 
     // Устанавливаем куку
     this.issueCookie(res, user.id, session.id);
+
+    // В конце метода login(), перед return:
+    this.notificationsService.emit({
+      type: 'LOGIN',
+      targetUserId: user.id, // Отправляем именно этому пользователю
+      data: {
+        message: `Новый вход в систему! Устройство: ${userAgent}, IP: ${ip}, Локация: ${location}`,
+      },
+    });
 
     return {
       id: user.id,
