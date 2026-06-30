@@ -14,18 +14,19 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Безопасно копируем файлы по SSH с использованием приватного ключа
+      # 2. Безопасно копируем файлы НАПРЯМУЮ в рабочую папку /app/practica-server
       - name: Copy files to Server via SSH Key
         uses: appleboy/scp-action@master
         with:
           host: ${{ secrets.HOST }}
           username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.SSH_KEY }} # Используем SSH-ключ ci-agent вместо пароля root
+          key: ${{ secrets.SSH_KEY }}
           source: "docker-compose.yml,Dockerfile,.dockerignore,prisma/,src/"
-          target: "/home/ci-agent/app-build"
-          clean: true
+          target: "/app/practica-server"
+          rm: true # Очищает старое содержимое целевой папки перед копированием, избавляя от мусора
+          strip_components: 0
 
-      # 3. Подключаемся и перезапускаем контейнеры без использования sudo
+      # 3. Подключаемся и запускаем сборку из правильного места
       - name: Executing remote SSH commands to deploy
         uses: appleboy/ssh-action@master
         with:
@@ -33,19 +34,21 @@ jobs:
           username: ${{ secrets.USERNAME }}
           key: ${{ secrets.SSH_KEY }}
           script: |
-            # Переносим файлы из папки выгрузки в целевую директорию приложения
-            cp -r /home/ci-agent/app-build/* /app/practica-server/
-            rm -rf /home/ci-agent/app-build
-            
             cd /app/practica-server
             
-            # Генерируем .env файл для продакшена
+            # Проверяем, на месте ли файлы (для вывода логов в GitHub Actions)
+            ls -la
+            
+            # Генерируем .env файл для продакшена на сервере
             echo "DATABASE_URL=postgresql://myuser:mypassword@postgres-db:5432/nest_db?schema=public" > .env
             echo "JWT_SECRET=super-secure-vps-prod-secret-key-12345" >> .env
             
-            # Благодаря членству в группе docker, команды выполняются без sudo и ввода паролей
+            # Останавливаем старое (если было) и поднимаем проект с полной пересборкой образов
             docker compose down
             docker compose up -d --build
             
-            # Чистим старые слои, чтобы на VPS не кончалось место
+            # Применяем миграции Prisma к базе данных внутри контейнера, чтобы автоматически создать таблицы СУБД
+            docker compose run --rm api-server npx prisma migrate deploy
+            
+            # Чистим кэш Docker-образов, освобождая память диска VPS
             docker image prune -f
