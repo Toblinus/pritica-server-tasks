@@ -34,7 +34,7 @@ jobs:
             docker compose up -d --build
             
             # 4. Ждем инициализации СУБД и накатываем миграции Prisma
-            sleep 5
+            sleep 6
             docker compose run --rm api-server npx prisma migrate deploy
             
             # 5. Очищаем кэш образов
