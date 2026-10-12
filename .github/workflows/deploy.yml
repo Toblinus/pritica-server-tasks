@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master # Ваша рабочая ветка (main или master)
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -34,7 +35,7 @@ jobs:
             docker compose up -d --build
             
             # 4. Ждем инициализации СУБД и накатываем миграции Prisma
-            sleep 6
+            sleep 5
             docker compose run --rm api-server npx prisma migrate deploy
             
             # 5. Очищаем кэш образов
