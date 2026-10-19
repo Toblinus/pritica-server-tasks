@@ -6,7 +6,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Устанавливаем все зависимости (включая devDependencies для компиляции)
-RUN npm i
+RUN npm i --verbose
 
 # Копируем исходный код и схему базы данных
 COPY tsconfig.json nest-cli.json ./
