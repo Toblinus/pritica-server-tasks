@@ -5,6 +5,8 @@ WORKDIR /app
 # Копируем файлы зависимостей
 COPY package*.json ./
 
+RUN npm config set registry https://npm-mirror.gitverse.ru
+
 # Устанавливаем все зависимости (включая devDependencies для компиляции)
 RUN npm i --verbose
 
