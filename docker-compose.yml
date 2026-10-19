@@ -4,7 +4,6 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-      dns: 8.8.8.8
     container_name: nest-api-server
     ports:
       - "80:3000"
@@ -54,3 +53,5 @@ volumes:
 networks:
   app-network:
     driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: "1400"
