@@ -3,10 +3,10 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 # 1. Проверяем DNS-резолв через Node.js (замена nslookup)
-RUN node -e "require('dns').resolve4('registry.npmjs.org', (err, addresses) => console.log('=== DNS TEST ===', err || addresses))"
+# RUN node -e "require('dns').resolve4('registry.npmjs.org', (err, addresses) => console.log('=== DNS TEST ===', err || addresses))"
 
 # 2. Проверяем HTTPS-подключение напрямую через Node.js (замена ping/curl)
-RUN node -e "require('https').get('https://npmjs.org', (res) => console.log('=== HTTPS TEST === CODE:', res.statusCode)).on('error', (e) => console.error('=== HTTPS TEST FAILED ===', e.message))"
+# RUN node -e "require('https').get('https://npmjs.org', (res) => console.log('=== HTTPS TEST === CODE:', res.statusCode)).on('error', (e) => console.error('=== HTTPS TEST FAILED ===', e.message))"
 
 # Копируем файлы зависимостей
 COPY package*.json ./
