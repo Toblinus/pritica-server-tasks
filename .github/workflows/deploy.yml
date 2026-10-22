@@ -33,12 +33,22 @@ jobs:
             
             # 3. Перезапускаем сборку контейнеров (Docker сам поймет, какие файлы изменились)
             export DOCKER_BUILDKIT=1
-            docker compose --env-file .env.docker down
-            docker compose --env-file .env.docker up -d --build
+            if docker compose version >/dev/null 2>&1; then
+              docker compose --env-file .env.docker down
+              docker compose --env-file .env.docker up -d --build
+            else
+              docker-compose --env-file .env.docker up -d --build
+              docker-compose --env-file .env.docker down
+            fi
             
             # 4. Ждем инициализации СУБД и накатываем миграции Prisma
             sleep 5
-            docker compose run --rm api-server npx prisma migrate deploy
+
+            if docker compose version >/dev/null 2>&1; then
+              docker compose run --rm api-server npx prisma migrate deploy
+            else
+              docker-compose run --rm api-server npx prisma migrate deploy
+            fi
             
             # 5. Очищаем кэш образов
             docker image prune -f
