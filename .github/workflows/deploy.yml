@@ -41,8 +41,8 @@ jobs:
               docker compose --env-file .env.docker down
               docker compose --env-file .env.docker up -d --build
             else
-              docker-compose --env-file .env.docker up -d --build
               docker-compose --env-file .env.docker down
+              docker-compose --env-file .env.docker up -d --build
             fi
             
             # 4. Ждем инициализации СУБД и накатываем миграции Prisma
@@ -51,8 +51,7 @@ jobs:
             if docker compose version >/dev/null 2>&1; then
               docker compose --env-file .env.docker run --rm api-server npx prisma migrate deploy
             else
-              # ИСПРАВЛЕНО: добавлено --env-file .env.docker во второй раз для контейнера run
-              docker-compose --env-file .env.docker run --env-file .env.docker --rm api-server npx prisma migrate deploy
+              docker-compose --env-file .env.docker run --rm api-server npx prisma migrate deploy
             fi
             
             # 5. Очищаем кэш образов
