@@ -6,7 +6,7 @@ services:
       dockerfile: Dockerfile
     container_name: nest-api-server
     ports:
-      - "80:3000"
+      - "${BIND_IP:-0.0.0.0}:80:3000"
     environment:
       - DATABASE_URL=postgresql://myuser:mypassword@postgres-db:5432/nest_db?schema=public
       - JWT_SECRET=fjsdkflsdfgsyglisugjdfhgksdgykusghs
@@ -25,7 +25,7 @@ services:
       POSTGRES_PASSWORD: mypassword
       POSTGRES_DB: nest_db
     ports:
-      - "5432:5432" # Пробрасываем наружу, чтобы вы могли подключаться через DBeaver
+      - "${BIND_IP:-127.0.0.1}:5432:5432" # Пробрасываем наружу, чтобы вы могли подключаться через DBeaver
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck: # Проверка здоровья базы данных перед стартом бэкенда
@@ -41,7 +41,7 @@ services:
     image: adminer:latest
     container_name: adminer-web
     ports:
-      - "8080:8080" # Будет доступен по адресу http://localhost:8080
+      - "${BIND_IP:-0.0.0.0}:8080:8080" # Будет доступен по адресу http://localhost:8080
     depends_on:
       - postgres-db
     networks:
@@ -53,5 +53,3 @@ volumes:
 networks:
   app-network:
     driver: bridge
-    driver_opts:
-      com.docker.network.driver.mtu: "1400"
