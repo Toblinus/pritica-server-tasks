@@ -51,7 +51,8 @@ jobs:
             if docker compose version >/dev/null 2>&1; then
               docker compose --env-file .env.docker run --rm api-server npx prisma migrate deploy
             else
-              docker-compose --env-file .env.docker run --rm api-server npx prisma migrate deploy
+              # ИСПРАВЛЕНО: добавлено --env-file .env.docker во второй раз для контейнера run
+              docker-compose --env-file .env.docker run --env-file .env.docker --rm api-server npx prisma migrate deploy
             fi
             
             # 5. Очищаем кэш образов
