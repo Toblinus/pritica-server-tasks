@@ -26,10 +26,14 @@ jobs:
             git pull origin master
             
             # 2. Пересоздаем .env файл (он в гите игнорируется, поэтому пишем на сервере)
+              # Переменные для самого приложения NestJS inside
             echo "DATABASE_URL=postgresql://myuser:mypassword@postgres-db:5432/nest_db?schema=public" > .env
             echo "JWT_SECRET=super-secure-vps-prod-secret-key-12345" >> .env
-
+            
+              # Переменные для Docker Compose (чтобы их видела Prisma при запуске миграций)
             echo "BIND_IP=${{ vars.BIND_IP }}" > .env.docker
+            echo "DATABASE_URL=postgresql://myuser:mypassword@postgres-db:5432/nest_db?schema=public" >> .env.docker
+            echo "JWT_SECRET=super-secure-vps-prod-secret-key-12345" >> .env.docker
             
             # 3. Перезапускаем сборку контейнеров (Docker сам поймет, какие файлы изменились)
             export DOCKER_BUILDKIT=1
