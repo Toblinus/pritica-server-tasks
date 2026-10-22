@@ -8,8 +8,8 @@ services:
     ports:
       - "${BIND_IP:-0.0.0.0}:80:3000"
     environment:
-      - DATABASE_URL=postgresql://myuser:mypassword@postgres-db:5432/nest_db?schema=public
-      - JWT_SECRET=fjsdkflsdfgsyglisugjdfhgksdgykusghs
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET=${JWT_SECRET}
     depends_on:
       postgres-db:
         condition: service_healthy # Ждем, пока база данных будет полностью готова принимать запросы
