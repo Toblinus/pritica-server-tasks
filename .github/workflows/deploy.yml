@@ -49,9 +49,9 @@ jobs:
             sleep 5
 
             if docker compose version >/dev/null 2>&1; then
-              docker compose --env-file run --rm api-server npx prisma migrate deploy
+              docker compose --env-file .env.docker run --rm api-server npx prisma migrate deploy
             else
-              docker-compose --env-file run --rm api-server npx prisma migrate deploy
+              docker-compose --env-file .env.docker run --rm api-server npx prisma migrate deploy
             fi
             
             # 5. Очищаем кэш образов
