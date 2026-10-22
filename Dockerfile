@@ -2,12 +2,6 @@
 FROM node:22-alpine AS builder
 WORKDIR /app
 
-# 1. Проверяем DNS-резолв через Node.js (замена nslookup)
-# RUN node -e "require('dns').resolve4('registry.npmjs.org', (err, addresses) => console.log('=== DNS TEST ===', err || addresses))"
-
-# 2. Проверяем HTTPS-подключение напрямую через Node.js (замена ping/curl)
-# RUN node -e "require('https').get('https://npmjs.org', (res) => console.log('=== HTTPS TEST === CODE:', res.statusCode)).on('error', (e) => console.error('=== HTTPS TEST FAILED ===', e.message))"
-
 # Копируем файлы зависимостей
 COPY package*.json ./
 
@@ -16,8 +10,8 @@ COPY package*.json ./
 # Устанавливаем все зависимости (включая devDependencies для компиляции)
 RUN npm i --verbose
 
-# Копируем исходный код и схему базы данных
-COPY tsconfig.json nest-cli.json ./
+# Копируем исходный код, файлы конфигурации и схему базы данных
+COPY tsconfig.json nest-cli.json prisma.config.ts ./
 COPY prisma ./prisma/
 COPY src ./src/
 
@@ -39,6 +33,7 @@ COPY --from=builder /app/package*.json ./
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/prisma.config.ts ./
 
 # Экспонируем порт NestJS
 EXPOSE 3000

@@ -12,7 +12,7 @@ jobs:
 
     steps:
       # Подключаемся к VPS и отдаем команды на обновление через Git
-      - name: Executing remote SSH commands to deploy
+      - name: Deploy
         uses: appleboy/ssh-action@master
         with:
           host: ${{ secrets.HOST }}
@@ -46,7 +46,7 @@ jobs:
             fi
             
             # 4. Ждем инициализации СУБД и накатываем миграции Prisma
-            sleep 5
+            sleep 10
 
             if docker compose version >/dev/null 2>&1; then
               docker compose --env-file .env.docker run --rm api-server npx prisma migrate deploy
