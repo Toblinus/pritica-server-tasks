@@ -28,11 +28,13 @@ jobs:
             # 2. Пересоздаем .env файл (он в гите игнорируется, поэтому пишем на сервере)
             echo "DATABASE_URL=postgresql://myuser:mypassword@postgres-db:5432/nest_db?schema=public" > .env
             echo "JWT_SECRET=super-secure-vps-prod-secret-key-12345" >> .env
+
+            echo "BIND_IP=${{ vars.BIND_IP }}" > .env.docker
             
             # 3. Перезапускаем сборку контейнеров (Docker сам поймет, какие файлы изменились)
             export DOCKER_BUILDKIT=1
-            docker compose down
-            docker compose up -d --build
+            docker compose --env-file .env.docker down
+            docker compose --env-file .env.docker up -d --build
             
             # 4. Ждем инициализации СУБД и накатываем миграции Prisma
             sleep 5
