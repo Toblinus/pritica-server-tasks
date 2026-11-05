@@ -11,6 +11,17 @@ import { AuthDto } from './dto/auth.dto';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { NotificationsService } from '../notifications/notifications.service';
+import crypto from 'node:crypto';
+
+export function generateSecureSuffix() {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  const array = new Uint8Array(2);
+  crypto.getRandomValues(array);
+
+  return (
+    alphabet[array[0] % alphabet.length] + alphabet[array[1] % alphabet.length]
+  );
+}
 
 @Injectable()
 export class AuthService {
@@ -52,7 +63,9 @@ export class AuthService {
         data: {
           name: `Личное пространство (${dto.login})`,
           isPrivate: true,
-          code: dto.login.toUpperCase().substring(0, 5), // Префикс на основе логина
+          code:
+            dto.login.toUpperCase().substring(0, 2) +
+            generateSecureSuffix().toUpperCase(), // Префикс на основе логина
         },
       });
 
