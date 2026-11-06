@@ -11,16 +11,14 @@ import { AuthDto } from './dto/auth.dto';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
 import { NotificationsService } from '../notifications/notifications.service';
-import crypto from 'node:crypto';
 
 export function generateSecureSuffix() {
   const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-  const array = new Uint8Array(2);
-  crypto.getRandomValues(array);
 
-  return (
-    alphabet[array[0] % alphabet.length] + alphabet[array[1] % alphabet.length]
-  );
+  const char1 = alphabet[Math.floor(Math.random() * alphabet.length)];
+  const char2 = alphabet[Math.floor(Math.random() * alphabet.length)];
+
+  return char1 + char2;
 }
 
 @Injectable()
