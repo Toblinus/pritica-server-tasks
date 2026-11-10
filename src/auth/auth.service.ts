@@ -204,7 +204,7 @@ export class AuthService {
 
   private async getLocationByIp(ip: string): Promise<string> {
     // Очищаем IP от IPv6-обертки локалхоста (бывает в некоторых системах как ::ffff:127.0.0.1)
-    const cleanIp = ip.replace('::ffff:', '');
+    const cleanIp = ip.replace(/^::ffff:/i, '');
 
     if (cleanIp === '::1' || cleanIp === '127.0.0.1') {
       return 'Локальный хост';
