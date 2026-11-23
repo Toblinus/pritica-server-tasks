@@ -242,15 +242,16 @@ export class AuthService {
       // Делаем асинхронный запрос к ip-api.com с требованием вернуть ответ на русском языке
       const response = await firstValueFrom(
         this.httpService.get<{
-          city?: string;
-          country?: string;
-          status: string;
-        }>(`http://ip-api.com/json/${cleanIp}?lang=ru`),
+          location: {
+            country: string;
+            city: string;
+          };
+        }>(`https://api.ipquery.io/94.228.121.160`),
       );
 
-      if (response.data && response.data.status === 'success') {
-        const country = response.data.country || 'Неизвестная страна';
-        const city = response.data.city || 'Неизвестный город';
+      if (response.data) {
+        const country = response.data.location.country || 'Неизвестная страна';
+        const city = response.data.location.city || 'Неизвестный город';
         return `${city}, ${country}`; // Склеиваем строку вида "Тула, Россия"
       }
 
