@@ -119,29 +119,41 @@ export class AuthService {
       throw new UnauthorizedException('Неверный логин или пароль');
     }
 
-    const location = await this.getLocationByIp(ip);
-
     // Создаем новую запись сессии при входе
     const session = await this.prisma.session.create({
       data: {
         userId: user.id,
         ip,
         userAgent,
-        location,
+        location: null,
       },
     });
+
+    void this.getLocationByIp(ip)
+      .then(async (location) => {
+        await this.prisma.session.update({
+          data: {
+            location,
+          },
+          where: {
+            id: session.id,
+          },
+        });
+
+        this.notificationsService.emit({
+          type: 'LOGIN',
+          targetUserId: user.id, // Отправляем именно этому пользователю
+          data: {
+            message: `Новый вход в систему! Устройство: ${userAgent}, IP: ${ip}, Локация: ${location}`,
+          },
+        });
+      })
+      .catch((err) => {
+        console.error('Ошибка в фоновом процессе после логина:', err);
+      });
 
     // Устанавливаем куку
     this.issueCookie(res, user.id, session.id);
-
-    // В конце метода login(), перед return:
-    this.notificationsService.emit({
-      type: 'LOGIN',
-      targetUserId: user.id, // Отправляем именно этому пользователю
-      data: {
-        message: `Новый вход в систему! Устройство: ${userAgent}, IP: ${ip}, Локация: ${location}`,
-      },
-    });
 
     return {
       id: user.id,
@@ -221,7 +233,7 @@ export class AuthService {
           city?: string;
           country?: string;
           status: string;
-        }>(`http://ip-api.com/json/{cleanIp}?lang=ru`),
+        }>(`http://ip-api.com/json/${cleanIp}?lang=ru`),
       );
 
       if (response.data && response.data.status === 'success') {
