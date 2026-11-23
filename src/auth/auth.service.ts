@@ -76,18 +76,30 @@ export class AuthService {
         },
       });
 
-      // Определяем локацию по IP (заглушка, позже прикрутим внешний API)
-      const location = await this.getLocationByIp(ip);
-
       // Создаем сессию
       const newSession = await tx.session.create({
         data: {
           userId: newUser.id,
           ip,
           userAgent,
-          location,
+          location: null,
         },
       });
+
+      void this.getLocationByIp(ip)
+        .then(async (location) => {
+          await this.prisma.session.update({
+            data: {
+              location,
+            },
+            where: {
+              id: session.id,
+            },
+          });
+        })
+        .catch((err) => {
+          console.error('Ошибка в фоновом процессе после логина:', err);
+        });
 
       return { user: newUser, session: newSession };
     });
