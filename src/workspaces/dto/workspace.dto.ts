@@ -1,4 +1,4 @@
-import { PartialType } from '@nestjs/swagger';
+import { PartialType, PickType } from '@nestjs/swagger';
 import {
   IsString,
   IsBoolean,
@@ -35,3 +35,6 @@ export class AddMemberDto {
 }
 
 export class UpdateWorkspaceDto extends PartialType(CreateWorkspaceDto) {}
+export class UpdateMemberRoleWorkspaceDto extends PickType(AddMemberDto, [
+  'role',
+]) {}

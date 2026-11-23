@@ -14,6 +14,7 @@ import {
   CreateWorkspaceDto,
   AddMemberDto,
   UpdateWorkspaceDto,
+  UpdateMemberRoleWorkspaceDto,
 } from './dto/workspace.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -92,6 +93,24 @@ export class WorkspacesController {
     return this.workspacesService.removeMember(workspaceId, memberId);
   }
 
+  @ApiOperation({ summary: 'Изменить роль участника' })
+  @ApiParam({ name: 'workspaceId', description: 'ID пространства' })
+  @ApiParam({ name: 'userId', description: 'ID изменяемого пользователя' })
+  @WorkspaceRoles('ADMIN') // Только админ может изменять роль людей
+  @UseGuards(WorkspaceRoleGuard)
+  @Patch(':workspaceId/members/:userId')
+  async changeMemberRole(
+    @Param('workspaceId') workspaceId: string,
+    @Param('userId') memberId: string,
+    @Body() dto: UpdateMemberRoleWorkspaceDto,
+  ) {
+    return this.workspacesService.changeMemberRole(
+      workspaceId,
+      memberId,
+      dto.role,
+    );
+  }
+
   @ApiOperation({ summary: 'Создать новую задачу в пространстве' })
   @ApiParam({ name: 'workspaceId', description: 'ID пространства задач' })
   @WorkspaceRoles('ADMIN', 'EDITOR') // Защита ролевым гвардом пространства
@@ -111,5 +130,12 @@ export class WorkspacesController {
   @Get(':workspaceId/tasks') // Красивый вложенный путь
   async getAdjacentTasks(@Param('workspaceId') workspaceId: string) {
     return this.tasksService.findAllInWorkspace(workspaceId);
+  }
+
+  @ApiOperation({ summary: 'Получить список всех участников пространства' })
+  @ApiParam({ name: 'workspaceId', description: 'ID пространства задач' })
+  @Get(':workspaceId/members')
+  async getMembersList(@Param('workspaceId') workspaceId: string) {
+    return this.workspacesService.getAllMembers(workspaceId);
   }
 }

@@ -80,7 +80,6 @@ export class WorkspacesService {
       );
     }
 
-    // Ниже идет ваша текущая валидация...
     const targetUser = await this.prisma.user.findUnique({
       where: { id: dto.userId },
     });
@@ -119,6 +118,26 @@ export class WorkspacesService {
     });
   }
 
+  async getAllMembers(workspaceId: string) {
+    const users = await this.prisma.workspaceMember.findMany({
+      where: {
+        workspaceId,
+      },
+      select: {
+        role: true,
+        userId: true,
+        user: {
+          select: {
+            id: true,
+            login: true,
+          },
+        },
+      },
+    });
+
+    return users;
+  }
+
   // Обновление данных пространства
   async update(workspaceId: string, dto: UpdateWorkspaceDto) {
     // Если обновляется код, проверяем его на уникальность
@@ -142,6 +161,49 @@ export class WorkspacesService {
         name: dto.name,
         code: dto.code ? dto.code.toUpperCase() : undefined,
         isPrivate: dto.isPrivate,
+      },
+    });
+  }
+
+  async changeMemberRole(
+    workspaceId: string,
+    userId: string,
+    role: AddMemberDto['role'],
+  ) {
+    // 1. Находим само пространство, чтобы проверить его тип
+    const workspace = await this.prisma.workspace.findUnique({
+      where: { id: workspaceId },
+    });
+
+    if (!workspace) {
+      throw new NotFoundException('Пространство задач не найдено');
+    }
+
+    // 2. Блокируем добавление участников, если пространство приватное
+    if (workspace.isPrivate) {
+      throw new ForbiddenException(
+        'В приватные пространства нельзя добавлять новых участников',
+      );
+    }
+
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!targetUser) {
+      throw new NotFoundException('Добавляемый пользователь не найден');
+    }
+
+    return this.prisma.workspaceMember.update({
+      data: {
+        role,
+      },
+      where: {
+        userId_workspaceId: { userId, workspaceId },
+      },
+      select: {
+        userId: true,
+        role: true,
       },
     });
   }

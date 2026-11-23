@@ -35,14 +35,13 @@ export class TasksController {
   @ApiOperation({ summary: 'Обновить задачу (Частично или полностью)' })
   @ApiParam({ name: 'taskId', description: 'ID задачи' })
   @WorkspaceRoles('ADMIN', 'EDITOR', 'EXECUTOR')
-  @Patch(':taskId') // 4. УБРАЛИ /workspaces/{workspaceId} из пути
+  @Patch(':taskId')
   async update(
     @Param('taskId') taskId: string,
     @Body() dto: UpdateTaskDto,
     @Req() req: AuthenticatedWorkspaceRequest,
   ) {
     const userRole = req.workspaceRole || 'OBSERVER';
-    // Нам больше не нужно передавать workspaceId в сервис, пускай сервис сам заберет его из задачи
     return this.tasksService.update(taskId, userRole, dto);
   }
 
