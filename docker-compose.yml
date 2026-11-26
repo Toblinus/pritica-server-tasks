@@ -5,6 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: nest-api-server
+    restart: always
     ports:
       - "${BIND_IP:-0.0.0.0}:80:3000"
     env_file:
@@ -19,6 +20,7 @@ services:
   postgres-db:
     image: postgres:16-alpine
     container_name: postgres-db
+    restart: always
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mypassword
@@ -39,6 +41,7 @@ services:
   adminer:
     image: adminer:latest
     container_name: adminer-web
+    restart: always
     ports:
       - "${BIND_IP:-0.0.0.0}:8080:8080" # Будет доступен по адресу http://localhost:8080
     depends_on:
