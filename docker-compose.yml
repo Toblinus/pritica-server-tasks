@@ -1,5 +1,4 @@
 services:
-  # 1. Сервер бэкенда NestJS
   api-server:
     build:
       context: .
@@ -16,7 +15,6 @@ services:
     networks:
       - app-network
 
-  # 2. База данных PostgreSQL
   postgres-db:
     image: postgres:16-alpine
     container_name: postgres-db
@@ -37,7 +35,6 @@ services:
     networks:
       - app-network
 
-  # 3. Веб-интерфейс Adminer для просмотра таблиц БД
   adminer:
     image: adminer:latest
     container_name: adminer-web
